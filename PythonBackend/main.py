@@ -5,7 +5,8 @@ import numpy as np
 import helper as hp
 import json
 import uvicorn
-import urllib.request 
+import urllib.request
+import os
 
 app = FastAPI()
 
