@@ -12,7 +12,10 @@ const app = express();
 const port = 5000;
 import dotenv from "dotenv";
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  credentials: true
+}));
 // app.use(cors());
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
@@ -27,7 +30,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       maxAge: 1000 * 60 * 60,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",,
       httpOnly: true,
     },
   }),
