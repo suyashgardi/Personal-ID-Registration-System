@@ -25,7 +25,8 @@ function LivenessScanner({ uploadedIdFile, onVerificationSuccess ,onVerification
       try {
         const idPhotoBase64 = await fileToBase64(uploadedIdFile);
         // sends connection request to  websocket open at port 8000and endpoint liveness
-        wsRef.current = new WebSocket("ws://localhost:8000/ws/liveness");
+        const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+        wsRef.current = new WebSocket(`${WS_URL}/ws/liveness`);
 
         // .onopen means when websocket accepts connection request 
         wsRef.current.onopen = () => {
