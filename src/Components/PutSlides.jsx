@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API from "../../../api.js"
 
 
 function PutSlides() {
@@ -40,7 +41,7 @@ function PutSlides() {
     
         photo: slideUrl,
       };
-      const response = await axios.post("/api/putslide", finalUserData,{
+      const response = await axios.post(`${API}/api/putslide, finalUserData,{
         withCredentials: true,
       });
         alert("slides uploaded");
