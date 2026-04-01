@@ -2,6 +2,7 @@ import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useState } from "react";
 import SignupForm from "../Components/FormComponents/SignupForm";
 import axios from "axios";
+import API from '../api.js';
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -37,7 +38,7 @@ function Signup() {
     };
     setFormData(actiondata);
     try {
-      const response = await axios.post("/api/validation", actiondata);
+      const response = await axios.post(`${API}/api/validation`, actiondata);
       if (response.data.isSent) {
         setIsSent(true);
         alert(response.data.message);
@@ -57,7 +58,7 @@ function Signup() {
     };
     setFormData(actiondata);
     try {
-      const response = await axios.post("/api/validation", actiondata);
+      const response = await axios.post(`${API}/api/validation`, actiondata);
       if (response.data.isVerified) {
         setIsValidated(true);
       }
@@ -75,7 +76,7 @@ function Signup() {
     }
 
     try {
-      const response = await axios.post("/api/users", formData);
+      const response = await axios.post(`${API}/api/users`, formData);
       alert("SignUP Successful \nproceed to Log-In");
       navigate("/login");
     } catch (error) {
