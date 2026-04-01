@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API from '../../api.js';
 
 export function useVerification(formData, setFormData) {
   const [isVerified, setIsVerified] = useState(false);
@@ -8,52 +9,32 @@ export function useVerification(formData, setFormData) {
 
   const handleRequest = async (e) => {
     e.preventDefault();
-    const actiondata = {
-      ...formData,
-      email: formData.email.trim(),
-      action: "Send OTP",
-      
-    };
-    
+    const actiondata = { ...formData, email: formData.email.trim(), action: "Send OTP" };
     setFormData(actiondata);
-    
     try {
-      const response = await axios.post("/api/validation", actiondata);
+      const response = await axios.post(`${API}/api/validation`, actiondata);
       if (response.data.isSent) {
         setIsEmail(true);
+        alert(response.data.message);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message;
-      alert(errorMessage);
+      alert(error.response?.data?.message);
     }
   };
 
   const handleVerification = async (e) => {
     e.preventDefault();
-    const actiondata = {
-      ...formData,
-      action: "verify OTP",
-    };
-
+    const actiondata = { ...formData, action: "verify OTP" };
     try {
-      const response = await axios.post("/api/validation", actiondata);
+      const response = await axios.post(`${API}/api/validation`, actiondata);
       if (response.data.isVerified) {
         setIsVerified(true);
-        setResetToken(response.data.resetToken)
+        setResetToken(response.data.resetToken);
       }
     } catch (error) {
-      const errormessage=error.response?.data?.message
-      console.log(errormessage);
-      alert(errormessage);
+      alert(error.response?.data?.message);
     }
   };
 
-
-  return {
-    isEmail,
-    isVerified,
-    resetToken,
-    handleRequest,
-    handleVerification,
-  };
+  return { isEmail, isVerified, resetToken, handleRequest, handleVerification };
 }
