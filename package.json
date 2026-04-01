@@ -1,5 +1,5 @@
 {
-  "name": "personal-ids",
+  "name": "secure-virtual-id-system",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -122,7 +122,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
