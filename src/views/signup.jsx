@@ -1,8 +1,9 @@
-import { useNavigate, Link, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import SignupForm from "../Components/FormComponents/SignupForm";
 import axios from "axios";
 import API from '../../api.js';
+import { useVerification } from '../CustomHooks/verification';
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -14,10 +15,8 @@ function Signup() {
     confirm_password: "",
     otp: "",
     action: "",
-    caller:"signupform",
+    caller: "signupform",
   });
-  const [isValidated, setIsValidated] = useState(false);
-  const [isSent, setIsSent] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -26,30 +25,28 @@ function Signup() {
     });
   };
 
-  const { isEmail, isVerified, resetToken,handleRequest, handleVerification } =
+  const { isVerified, handleRequest, handleVerification } =
     useVerification(formData, setFormData);
-  
+
   const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isValidated) {
+    if (!isVerified) {
       alert("please verify your email");
       return null;
     }
-
     try {
       const response = await axios.post(`${API}/api/users`, formData);
       alert("SignUP Successful \nproceed to Log-In");
       navigate("/login");
     } catch (error) {
       console.error("error: ", error);
-      // Let's read the exact error your Express backend sends!
       alert(
         error.response?.data?.error ||
           error.response?.data ||
           "SignUp Failed \n Try Again!",
       );
-
       navigate("/signup");
     }
   };
@@ -59,11 +56,12 @@ function Signup() {
       handleChange={handleChange}
       handleSubmit={handleSubmit}
       formData={formData}
-      isValidated={isValidated}
+      isValidated={isVerified}
       handleVerification={handleVerification}
-      handleSendOTP={handleSendOTP}
-      isSent={isSent}
+      handleSendOTP={handleRequest}
+      isSent={false}
     />
   );
 }
+
 export default Signup;
