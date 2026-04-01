@@ -2,64 +2,31 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import ForgotPassword from "../Components/FormComponents/ForgotPassword";
+import { useVerification } from "../CustomHooks/verification";
 import API from '../../api.js';
 
-
-import { useVerification } from "../CustomHooks/verification"; 
-
 function Recover() {
-  const [formData, setFormData] = useState({
-    email: "",
-    otp: "",
-    password: "",
-    confirmPassword: "",
-    action: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", otp: "", password: "", confirmPassword: "", action: "" });
   const navigate = useNavigate();
-
-
-  const { 
-    isEmail, 
-    isVerified, 
-    resetToken,
-    handleRequest, 
-    handleVerification 
-  } = useVerification(formData, setFormData);
+  const { isEmail, isVerified, resetToken, handleRequest, handleVerification } = useVerification(formData, setFormData);
 
   const handleChange = (e) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-
-      const token = {
-        ...formData,
-        resetToken: resetToken 
-      };
-      const response = await axios.patch(`${API}/api/newpassword`, token);
-      if (response) {
-        alert(response.data.message);
-        navigate("/login");
-      }
+      const response = await axios.patch(`${API}/api/newpassword`, { ...formData, resetToken });
+      alert(response.data.message);
+      navigate("/login");
     } catch (error) {
       console.error("Backend Error:", error);
     }
   };
 
-  const handleReturn = () => {
-    navigate("/login");
-  };
-
   return (
     <div>
-      {/* Notice how nothing changes down here! */}
       <ForgotPassword
         formData={formData}
         handleChange={handleChange}
@@ -68,7 +35,7 @@ function Recover() {
         handleRequest={handleRequest}
         isEmail={isEmail}
         isVerified={isVerified}
-        returnLogin={handleReturn}
+        returnLogin={() => navigate("/login")}
       />
     </div>
   );
