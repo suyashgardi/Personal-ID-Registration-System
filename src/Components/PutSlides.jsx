@@ -41,7 +41,7 @@ function PutSlides() {
     
         photo: slideUrl,
       };
-      const response = await axios.post(`${API}/api/putslide, finalUserData,{
+      const response = await axios.post(`${API}/api/putslide`, finalUserData,{
         withCredentials: true,
       });
         alert("slides uploaded");
