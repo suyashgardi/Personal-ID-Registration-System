@@ -7,46 +7,23 @@ import { useVerification } from '../CustomHooks/verification';
 
 function Signup() {
   const [formData, setFormData] = useState({
-    f_name: "",
-    l_name: "",
-    phone: "",
-    email: "",
-    password: "",
-    confirm_password: "",
-    otp: "",
-    action: "",
-    caller: "signupform",
+    f_name: "", l_name: "", phone: "", email: "",
+    password: "", confirm_password: "", otp: "", action: "", caller: "signupform",
   });
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const { isVerified, handleRequest, handleVerification } =
-    useVerification(formData, setFormData);
-
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const { isVerified, isEmail, handleRequest, handleVerification } = useVerification(formData, setFormData);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isVerified) {
-      alert("please verify your email");
-      return null;
-    }
+    if (!isVerified) { alert("Please verify your email"); return; }
     try {
-      const response = await axios.post(`${API}/api/users`, formData);
-      alert("SignUP Successful \nproceed to Log-In");
+      await axios.post(`${API}/api/users`, formData);
+      alert("SignUp Successful\nProceed to Log-In");
       navigate("/login");
     } catch (error) {
-      console.error("error: ", error);
-      alert(
-        error.response?.data?.error ||
-          error.response?.data ||
-          "SignUp Failed \n Try Again!",
-      );
+      alert(error.response?.data?.error || error.response?.data || "SignUp Failed\nTry Again!");
       navigate("/signup");
     }
   };
@@ -59,7 +36,7 @@ function Signup() {
       isValidated={isVerified}
       handleVerification={handleVerification}
       handleSendOTP={handleRequest}
-      isSent={false}
+      isSent={isEmail}
     />
   );
 }
