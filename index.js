@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import bodyparser from "body-parser";
 import pg from "pg";
@@ -9,18 +11,19 @@ import cors from "cors";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 
-dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(
-  cors({
-    origin:
-      "https://secure-virtual-id-system-with-biome.vercel.app" || process.env.FRONTEND_URL 
-      ,
-    credentials: true,
-  }),
-);
+const corsOptions = {
+  origin: "https://secure-virtual-id-system-with-biome.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
@@ -500,16 +503,11 @@ app.post("/api/validation", async (req, res) => {
       }, 300000);
 
       if (!emailUser || !emailPass) {
-        console.log(
-          "⚠️  SOURCE_EMAIL or SOURCE_EMAIL_PASS not set — OTP:",
-          OTP,
-        );
-        return res
-          .status(200)
-          .json({
-            isSent: true,
-            message: "OTP generated (email not configured)",
-          });
+        console.log("WARNING: SOURCE_EMAIL or SOURCE_EMAIL_PASS not set — OTP:", OTP);
+        return res.status(200).json({
+          isSent: true,
+          message: "OTP generated (email not configured)",
+        });
       }
 
       const transporter = nodemailer.createTransport({
@@ -537,12 +535,9 @@ app.post("/api/validation", async (req, res) => {
           .json({ isSent: true, message: "OTP has been sent to your email" });
       } catch (err) {
         console.error("Mail send error:", err);
-        return res
-          .status(500)
-          .json({
-            message:
-              "Failed to send OTP email. Check SOURCE_EMAIL credentials.",
-          });
+        return res.status(500).json({
+          message: "Failed to send OTP email. Check SOURCE_EMAIL credentials.",
+        });
       }
     }
 
