@@ -1,28 +1,31 @@
+import dotenv from "dotenv";
 import express from "express";
 import bodyparser from "body-parser";
 import pg from "pg";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
-import cors from "cors";
 import session from "express-session";
-import { validate } from "deep-email-validator";
+import cors from "cors";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-const app = express();
-const port = 5000;
-import dotenv from "dotenv";
-dotenv.config();
-app.use(cors({
-  origin:  process.env.FRONTEND_URL ||  "https://secure-virtual-id-system-with-biome.vercel.app" ,
-  credentials: true
-}));
 
-// app.use(cors());
+dotenv.config();
+const app = express();
+const port = process.env.PORT || 5000;
+
+app.use(
+  cors({
+    origin:
+      process.env.FRONTEND_URL ||
+      "https://secure-virtual-id-system-with-biome.vercel.app",
+    credentials: true,
+  }),
+);
+
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(bodyparser.json());
 app.use(express.json());
 app.use(express.static("public"));
-
 
 app.use(
   session({
@@ -33,6 +36,7 @@ app.use(
       maxAge: 1000 * 60 * 60,
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
 );
@@ -45,24 +49,8 @@ const db = new pg.Pool({
   port: process.env.DB_PORT,
 });
 
-async function verifyEmail(email) {
-  const result = await validate({
-    email: email,
-    validateRegex: true,
-    validateMx: false,
-    validateTypo: false,
-    validateDisposable: false,
-    validateSMTP: false,
-  });
-  if (!result.valid) {
-    console.log(` Validation Failed For: "${email}"`);
-    console.log(JSON.stringify(result.validators, null, 2));
-    return true;
-  }
-  if (result.valid) {
-    return true;
-  }
-  
+function verifyEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
 
 cloudinary.config({
@@ -75,7 +63,9 @@ db.connect()
   .then(() => console.log("Connected to PostgreSQL"))
   .catch((err) => console.error("Connection error", err.stack));
 
-app.get("/api", async (req, res) => {});
+app.get("/api", async (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.post("/api/sessions", async (req, res) => {
   try {
@@ -103,7 +93,6 @@ app.post("/api/sessions", async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-
     res.status(500).json({ error: "Server Error" });
   }
 });
@@ -148,21 +137,18 @@ app.get("/api/getslides", async (req, res) => {
 
 app.post("/api/users", async (req, res) => {
   try {
-    let doesExist;
     let phone = req.body.phone;
     let password = req.body.password;
     let email = req.body.email;
     let confirmPassword = req.body.confirm_password;
-    if (email) {
-      doesExist = await verifyEmail(email);
-      if (!doesExist) {
-        return res.status(400).json({ error: " invalid email " });
-      }
+
+    if (email && !verifyEmail(email)) {
+      return res.status(400).json({ error: "Invalid email address." });
     }
 
-    const checkQuery = "SELECT * FROM logins_db WHERE email = $1";
-    const checkResult = await db.query(checkQuery, [email]);
-    if (checkResult.rowCount > 0) {
+    const checkEmailQuery = "SELECT * FROM logins_db WHERE email = $1";
+    const checkEmailResult = await db.query(checkEmailQuery, [email]);
+    if (checkEmailResult.rowCount > 0) {
       return res
         .status(400)
         .json({ message: "User with this email already exists" });
@@ -171,6 +157,7 @@ app.post("/api/users", async (req, res) => {
     if (password !== confirmPassword) {
       return res.status(400).json({ error: "Passwords do not match." });
     }
+
     if (/^\d{10}$/.test(phone)) {
       const checkQuery = "SELECT * FROM logins_db WHERE phone = $1";
       const checkResult = await db.query(checkQuery, [phone]);
@@ -199,11 +186,9 @@ app.post("/api/users", async (req, res) => {
           res.status(500).json({ error: "Error Signing up user" });
         }
       } else {
-        console.log("flag2dbhbjhsdj");
         return res.status(400).json({ error: "User already exists." });
       }
     } else {
-      console.log("flag #####3dbhbjhsdj");
       return res.status(400).json({
         error: "Invalid phone number. Please enter a 10-digit number.",
       });
@@ -290,8 +275,6 @@ app.post("/api/person", async (req, res) => {
   }
 });
 
-
-
 app.patch("/api/person", async (req, res) => {
   try {
     if (!req.session.user) {
@@ -316,7 +299,6 @@ app.patch("/api/person", async (req, res) => {
       return res.status(401).json({ message: "Token has expired" });
     }
 
-
     const tempUrl = req.body.photo;
     let finalUrl = "";
 
@@ -334,7 +316,6 @@ app.patch("/api/person", async (req, res) => {
     const linkedacc = req.session.user.phone;
     const photoPath = finalUrl;
     const facedata = req.body.facedata;
-
     let idNumber = req.body.id_number;
 
     const query = `
@@ -416,6 +397,7 @@ app.get("/api/preusers", async (req, res) => {
     res.status(500).json({ error: "Failed Fetching " });
   }
 });
+
 app.get("/api/states", async (req, res) => {
   try {
     const query = `SELECT DISTINCT statename FROM states ORDER BY statename ASC`;
@@ -477,88 +459,97 @@ app.get("/api/districts/:statename", async (req, res) => {
 let tempOTPstorage = {};
 let otpTimeouts = {};
 const validResetTokens = new Map();
+
 app.post("/api/validation", async (req, res) => {
   try {
     console.log("triggered api");
-    let doesExist;
     let receiverEmail = req.body.email;
     let action = req.body.action;
     let caller = req.body.caller;
 
-    if (action == "Send OTP") {
+    if (action === "Send OTP") {
       const emailUser = process.env.SOURCE_EMAIL;
       const emailPass = process.env.SOURCE_EMAIL_PASS;
 
       console.log("email: ", receiverEmail);
 
-      if (receiverEmail) {
-        doesExist = await verifyEmail(receiverEmail);
-        if (!doesExist) {
-          console.log(" invalid ");
-          return res.status(400).json({ message: " invalid email " });
+      if (!receiverEmail || !verifyEmail(receiverEmail)) {
+        console.log("invalid email");
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+
+      if (caller !== "signupform" && caller !== "Updater") {
+        const query = `SELECT email FROM logins_db WHERE email=$1;`;
+        const result = await db.query(query, [receiverEmail]);
+        if (result.rowCount === 0) {
+          return res
+            .status(400)
+            .json({ message: "User does not exist in database" });
         }
       }
 
-      const query = `SELECT email FROM logins_db WHERE email=$1 ;`;
-      const result = await db.query(query, [receiverEmail]);
-      let rowcount = result.rowCount;
-      if (caller == "signupform" || caller == "Updater") {
-        rowcount = 1;
-      }
+      const OTP = Math.floor(Math.random() * (999999 - 100000) + 100000);
+      tempOTPstorage[receiverEmail] = OTP;
 
-      if (rowcount == 0) {
+      if (otpTimeouts[receiverEmail]) {
+        clearTimeout(otpTimeouts[receiverEmail]);
+      }
+      otpTimeouts[receiverEmail] = setTimeout(() => {
+        delete tempOTPstorage[receiverEmail];
+        delete otpTimeouts[receiverEmail];
+      }, 300000);
+
+      if (!emailUser || !emailPass) {
+        console.log(
+          "⚠️  SOURCE_EMAIL or SOURCE_EMAIL_PASS not set — OTP:",
+          OTP,
+        );
         return res
-          .status(400)
-          .json({ message: "User does not exist in database" });
-      } else {
-        const OTP = Math.floor(Math.random() * (999999 - 100000) + 100000);
-        tempOTPstorage[receiverEmail] = OTP;
-
-        if (otpTimeouts[receiverEmail]) {
-          clearTimeout(otpTimeouts[receiverEmail]);
-        }
-        otpTimeouts[receiverEmail] = setTimeout(() => {
-          delete tempOTPstorage[receiverEmail];
-          delete otpTimeouts[receiverEmail];
-        }, 300000);
-
-        if (emailUser && emailPass) {
-          const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-              user: emailUser,
-              pass: emailPass,
-            },
+          .status(200)
+          .json({
+            isSent: true,
+            message: "OTP generated (email not configured)",
           });
-          try {
-            const subject =
-              caller === "signupform"
-                ? "Email Verification for SignUp To personal IDs"
-                : `OTP Verification For Resetting Password `;
+      }
 
-            const mailOptions = {
-              from: emailUser,
-              to: receiverEmail,
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: emailUser, pass: emailPass },
+      });
 
-              subject: subject,
-              text: `The verification code recieved is : ${OTP}\n`,
-            };
+      try {
+        const subject =
+          caller === "signupform"
+            ? "Email Verification for SignUp To personal IDs"
+            : "OTP Verification For Resetting Password";
 
-            await transporter.sendMail(mailOptions);
+        const mailOptions = {
+          from: emailUser,
+          to: receiverEmail,
+          subject: subject,
+          text: `The verification code received is: ${OTP}\n`,
+        };
 
-            return res.status(200).json({
-              isSent: true,
-              message: "otp has been sent to your email",
-            });
-          } catch (err) {
-            return res.status(400).json(err);
-          }
-        }
+        await transporter.sendMail(mailOptions);
+
+        return res
+          .status(200)
+          .json({ isSent: true, message: "OTP has been sent to your email" });
+      } catch (err) {
+        console.error("Mail send error:", err);
+        return res
+          .status(500)
+          .json({
+            message:
+              "Failed to send OTP email. Check SOURCE_EMAIL credentials.",
+          });
       }
     }
-    if (action == "verify OTP") {
+
+    if (action === "verify OTP") {
       let userOTP = parseInt(req.body.otp);
       let storedOTP = tempOTPstorage[receiverEmail];
+
       if (storedOTP && userOTP === storedOTP) {
         delete tempOTPstorage[receiverEmail];
         if (otpTimeouts[receiverEmail]) {
@@ -567,22 +558,23 @@ app.post("/api/validation", async (req, res) => {
         }
 
         const resetToken = crypto.randomBytes(32).toString("hex");
-
         validResetTokens.set(receiverEmail, {
           token: resetToken,
           expires: Date.now() + 15 * 60 * 1000,
         });
 
-        return res.status(200).json({
-          isVerified: true,
-          resetToken: resetToken,
-        });
+        return res
+          .status(200)
+          .json({ isVerified: true, resetToken: resetToken });
       } else {
-        return res.status(400).json({ message: " incorrect otp try again" });
+        return res.status(400).json({ message: "Incorrect OTP, try again" });
       }
     }
+
+    return res.status(400).json({ message: "Invalid action" });
   } catch (err) {
-    return res.status(500).json({ error: "error happened while sending OTP" });
+    console.error("Validation route error:", err);
+    return res.status(500).json({ error: "Error happened while sending OTP" });
   }
 });
 
@@ -608,7 +600,6 @@ app.patch("/api/newpassword", async (req, res) => {
       return res.status(401).json({ message: "Token has expired" });
     }
 
-   
     if (password === confirmPassword) {
       const saltRounds = 10;
       password = await bcrypt.hash(password, saltRounds);
@@ -618,11 +609,11 @@ app.patch("/api/newpassword", async (req, res) => {
         validResetTokens.delete(email);
         return res
           .status(200)
-          .json({ message: "Password Changed Sucessfully !" });
+          .json({ message: "Password Changed Successfully!" });
       }
     } else {
       return res.status(400).json({
-        message: " Entered Password and Confirm Password do not match ",
+        message: "Entered Password and Confirm Password do not match",
       });
     }
   } catch (err) {
