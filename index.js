@@ -45,25 +45,25 @@ const db = new pg.Pool({
   port: process.env.DB_PORT,
 });
 
-async function verifyEmail(email) {
-  const result = await validate({
-    email: email,
-    validateRegex: true,
-    validateMx: false,
-    validateTypo: false,
-    validateDisposable: false,
-    validateSMTP: false,
-  });
-  if (!result.valid) {
-    console.log(` Validation Failed For: "${email}"`);
-    console.log(JSON.stringify(result.validators, null, 2));
-  }
-  if (result.valid) {
-    return true;
-  }
+// async function verifyEmail(email) {
+//   const result = await validate({
+//     email: email,
+//     validateRegex: true,
+//     validateMx: false,
+//     validateTypo: false,
+//     validateDisposable: false,
+//     validateSMTP: false,
+//   });
+//   if (!result.valid) {
+//     console.log(` Validation Failed For: "${email}"`);
+//     console.log(JSON.stringify(result.validators, null, 2));
+//   }
+//   if (result.valid) {
+//     return true;
+//   }
 
-  return false;
-}
+//   return false;
+// }
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLD_NAME,
@@ -491,13 +491,13 @@ app.post("/api/validation", async (req, res) => {
 
       console.log("email: ", receiverEmail);
 
-      if (receiverEmail) {
-        doesExist = await verifyEmail(receiverEmail);
-        if (!doesExist) {
-          console.log(" invalid ");
-          return res.status(400).json({ message: " invalid email " });
-        }
-      }
+      // if (receiverEmail) {
+      //   doesExist = await verifyEmail(receiverEmail);
+      //   if (!doesExist) {
+      //     console.log(" invalid ");
+      //     return res.status(400).json({ message: " invalid email " });
+      //   }
+      // }
 
       const query = `SELECT email FROM logins_db WHERE email=$1 ;`;
       const result = await db.query(query, [receiverEmail]);
