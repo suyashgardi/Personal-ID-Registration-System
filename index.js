@@ -57,13 +57,12 @@ async function verifyEmail(email) {
   if (!result.valid) {
     console.log(` Validation Failed For: "${email}"`);
     console.log(JSON.stringify(result.validators, null, 2));
+    return true;
   }
   if (result.valid) {
     return true;
   }
-  if (!result.valid){
-
-  return true;}
+  
 }
 
 cloudinary.config({
