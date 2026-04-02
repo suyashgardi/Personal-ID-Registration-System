@@ -8,7 +8,7 @@ import { useVerification } from "../CustomHooks/verification";
 import RegisterForm from "./FormComponents/RegisterForm";
 import LivenessScanner from "./LivenessScanner";
 import { GetUsers } from "../CustomHooks/getUsers";
-import API from '../../../api.js';
+import API from '../../api.js';
 
 function UpdateUser() {
   const { user, isLoading } = useAuth();
