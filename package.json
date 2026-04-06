@@ -1,8 +1,6 @@
 {
   "name": "secure-virtual-id-system",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
@@ -16,7 +14,6 @@
     "body-parser": "^1.20.4",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.6",
-    "crypto": "^1.0.1",
     "deep-email-validator": "^0.1.21",
     "dotenv": "^17.3.1",
     "ejs": "^4.0.1",
@@ -36,8 +33,5 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.4",
     "vite": "^7.3.1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
